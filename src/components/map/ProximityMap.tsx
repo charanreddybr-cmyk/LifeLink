@@ -47,10 +47,9 @@ export const ProximityMap: React.FC<ProximityMapProps> = ({
         zoomControl: false,
       });
 
-      // Add modern CartoDB Positron / OSM tiles with clean high-contrast styling
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+      // Add standard OpenStreetMap tiles (free, reliable, no API key watermarks)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
       }).addTo(map);
 
@@ -262,7 +261,7 @@ export const ProximityMap: React.FC<ProximityMapProps> = ({
 
         <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
           <Layers className="w-3.5 h-3.5" />
-          <span>OpenStreetMap & CartoDB tiles</span>
+          <span>OpenStreetMap contributors</span>
         </div>
       </div>
 

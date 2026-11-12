@@ -14,7 +14,7 @@ LifeLink is a production-oriented, full-stack, real-time blood donor registry an
 - **Frontend Core:** React 19, TypeScript, Vite, Tailwind CSS, Lucide React
 - **Backend & Database:** PostgreSQL 15+ (Supabase), Row Level Security (RLS), Triggers, Realtime Replication
 - **Preliminary Matching Engine:** Component-aware ABO/Rh clinical matrix, Haversine proximity calculations, 90-day rest interval enforcement
-- **Mapping & Geofencing:** Leaflet, OpenStreetMap, CartoDB Positron, DPDP ~1.1 km privacy blur rings
+- **Mapping & Geofencing:** Leaflet, OpenStreetMap, DPDP ~1.1 km privacy blur rings
 - **Real-Time Data Layer:** Supabase Realtime Channels (`blood_requests`, `donor_responses`), `BroadcastChannel` multi-tab bus, Web Audio API synthetic alert chimes
 - **Multichannel Notifications:** Web Push Notifications (`public/sw.js`), Indian TRAI DLT Registered SMS templates (`LIFELK`), Transactional Email
 - **PWA & Offline Resilience:** Web App Manifest (`manifest.json`), Service Worker caching, offline emergency hospital hotlines
