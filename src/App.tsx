@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { EmergencyAlertBanner } from './components/layout/EmergencyAlertBanner';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -11,12 +12,15 @@ import { EmergencyDirectory } from './components/landing/EmergencyDirectory';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsPage } from './pages/TermsPage';
 import { ContactPage } from './pages/ContactPage';
+import { DonorDashboardPage } from './pages/donor/DonorDashboardPage';
+import { RequesterDashboardPage } from './pages/requester/RequesterDashboardPage';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { EmergencyRequestModal } from './components/common/EmergencyRequestModal';
 import { DonorRegisterModal } from './components/common/DonorRegisterModal';
 import { LoginModal } from './components/common/LoginModal';
 import type { BloodGroup } from './types/blood.types';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<string>('home');
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
   const [isDonorModalOpen, setIsDonorModalOpen] = useState(false);
@@ -24,7 +28,8 @@ export const App: React.FC = () => {
   const [prefillBloodGroup, setPrefillBloodGroup] = useState<BloodGroup | undefined>(undefined);
   const [prefillLocalityId, setPrefillLocalityId] = useState<string | undefined>(undefined);
 
-  // Scroll to top on page navigation
+  const { role, user } = useAuth();
+
   const handleNavigate = (pageId: string) => {
     setCurrentPage(pageId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -42,6 +47,10 @@ export const App: React.FC = () => {
 
   const handleOpenLoginModal = () => {
     setIsLoginModalOpen(true);
+  };
+
+  const handleLoginSuccess = () => {
+    handleNavigate('dashboard');
   };
 
   return (
@@ -105,6 +114,17 @@ export const App: React.FC = () => {
         {currentPage === 'privacy' && <PrivacyPolicyPage />}
         {currentPage === 'terms' && <TermsPage />}
         {currentPage === 'contact' && <ContactPage />}
+
+        {/* Role-based Dashboard */}
+        {currentPage === 'dashboard' && (
+          <>
+            {(!user || role === 'donor') && <DonorDashboardPage />}
+            {user && role === 'requester' && (
+              <RequesterDashboardPage onCreateRequest={() => handleOpenEmergencyModal()} />
+            )}
+            {user && role === 'admin' && <AdminDashboardPage />}
+          </>
+        )}
       </main>
 
       {/* 4. Global Responsive Footer */}
@@ -125,6 +145,7 @@ export const App: React.FC = () => {
       <DonorRegisterModal
         isOpen={isDonorModalOpen}
         onClose={() => setIsDonorModalOpen(false)}
+        onSubmitSuccess={() => handleNavigate('dashboard')}
       />
 
       <LoginModal
@@ -132,9 +153,18 @@ export const App: React.FC = () => {
         onClose={() => setIsLoginModalOpen(false)}
         onRegisterDonor={handleOpenDonorModal}
         onRequestEmergency={() => handleOpenEmergencyModal()}
+        onLoginSuccess={handleLoginSuccess}
       />
 
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

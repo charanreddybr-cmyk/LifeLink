@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Menu, X, Droplet, Heart, ShieldCheck, AlertCircle, PlusCircle } from 'lucide-react';
+import { Menu, X, Droplet, Heart, AlertCircle, PlusCircle, LogOut, UserCheck } from 'lucide-react';
 import { Button } from '../common/Button';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavbarProps {
   currentPage: string;
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogin,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, profile, role, signOut } = useAuth();
 
   const navLinks = [
     { id: 'home', label: 'Home' },
@@ -25,8 +27,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'how-it-works', label: 'How It Works' },
     { id: 'safety', label: 'Safety Charter' },
     { id: 'hospitals', label: 'Bengaluru Blood Banks' },
-    { id: 'about', label: 'About LifeLink' },
+    { id: 'about', label: 'About' },
   ];
+
+  if (user) {
+    navLinks.push({ id: 'dashboard', label: 'My Dashboard' });
+  }
 
   const handleLinkClick = (id: string) => {
     onNavigate(id);
@@ -55,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Life<span className="text-brand-700">Link</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center text-[10px] font-bold uppercase tracking-wider bg-brand-50 text-brand-700 px-1.5 py-0.5 rounded border border-brand-200">
-                  BLR v1.0
+                  BLR
                 </span>
               </div>
               <p className="text-[11px] font-medium text-charcoal-500 tracking-tight leading-none mt-0.5 hidden xs:block">
@@ -74,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => handleLinkClick(link.id)}
                   className={`px-3 py-2 text-sm font-semibold rounded-lg transition-colors duration-150 ${
                     isActive
-                      ? 'text-brand-700 bg-brand-50'
+                      ? 'text-brand-700 bg-brand-50 font-bold'
                       : 'text-charcoal-600 hover:text-charcoal-900 hover:bg-slate-100/70'
                   }`}
                 >
@@ -94,20 +100,46 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               Request Blood
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRegisterDonor}
-              leftIcon={<PlusCircle className="w-4 h-4 text-brand-700" />}
-            >
-              Register Donor
-            </Button>
-            <button
-              onClick={onLogin}
-              className="text-xs font-semibold text-charcoal-700 hover:text-charcoal-900 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              Sign In
-            </button>
+
+            {user ? (
+              <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
+                <button
+                  onClick={() => handleLinkClick('dashboard')}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-charcoal-900 text-xs font-bold transition-colors"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-brand-600" />
+                  <span>{profile?.full_name || 'My Profile'}</span>
+                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-white text-brand-700 border border-slate-200">
+                    {role}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => signOut()}
+                  className="p-2 rounded-xl text-charcoal-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRegisterDonor}
+                  leftIcon={<PlusCircle className="w-4 h-4 text-brand-700" />}
+                >
+                  Register Donor
+                </Button>
+                <button
+                  onClick={onLogin}
+                  className="text-xs font-semibold text-charcoal-700 hover:text-charcoal-900 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  Sign In
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -144,7 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => handleLinkClick(link.id)}
                   className={`flex items-center justify-between w-full px-3 py-2.5 text-left text-sm font-semibold rounded-xl ${
                     isActive
-                      ? 'bg-brand-50 text-brand-700'
+                      ? 'bg-brand-50 text-brand-700 font-bold'
                       : 'text-charcoal-700 hover:bg-slate-100'
                   }`}
                 >
@@ -168,36 +200,51 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               Request Emergency Blood
             </Button>
-            <Button
-              variant="outline"
-              size="md"
-              className="w-full justify-center"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onRegisterDonor();
-              }}
-              leftIcon={<PlusCircle className="w-4 h-4 text-brand-700" />}
-            >
-              Register as Willing Donor
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-center"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onLogin();
-              }}
-            >
-              Sign In to Your Account
-            </Button>
-          </div>
 
-          <div className="pt-2 text-center">
-            <span className="inline-flex items-center gap-1.5 text-xs text-charcoal-500">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Verified blood requests in Bengaluru
-            </span>
+            {user ? (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-100">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-brand-700" />
+                  <span className="text-xs font-bold text-charcoal-900">{profile?.full_name} ({role})</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    signOut();
+                  }}
+                  className="text-xs text-red-600 font-bold hover:underline flex items-center gap-1"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="w-full justify-center"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onRegisterDonor();
+                  }}
+                  leftIcon={<PlusCircle className="w-4 h-4 text-brand-700" />}
+                >
+                  Register as Willing Donor
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-center"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onLogin();
+                  }}
+                >
+                  Sign In
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -5,7 +5,8 @@ import { Input } from './Input';
 import { ALL_BLOOD_GROUPS } from '../../types/blood.types';
 import type { BloodGroup } from '../../types/blood.types';
 import { BENGALURU_LOCALITIES } from '../../data/bengaluruLocalities';
-import { User, Phone, Mail, Heart, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Phone, Mail, Lock, Heart, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface DonorRegisterModalProps {
   isOpen: boolean;
@@ -24,11 +25,14 @@ export const DonorRegisterModal: React.FC<DonorRegisterModalProps> = ({
   const [pincode, setPincode] = useState('560038');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [passed90Days, setPassed90Days] = useState(true);
   const [availableForEmergency, setAvailableForEmergency] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const { signUpDonor } = useAuth();
 
   const handleLocalityChange = (locId: string) => {
     setLocalityId(locId);
@@ -38,7 +42,7 @@ export const DonorRegisterModal: React.FC<DonorRegisterModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -54,15 +58,32 @@ export const DonorRegisterModal: React.FC<DonorRegisterModalProps> = ({
       setErrorMsg('Please enter a valid email address.');
       return;
     }
+    if (!password || password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
     if (!passed90Days) {
       setErrorMsg('Medical rule: You must wait 90 days after whole blood donation before donating again.');
       return;
     }
 
     setIsSubmitting(true);
+    const targetLocality = BENGALURU_LOCALITIES.find(l => l.id === localityId)?.name || 'Bengaluru';
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    const result = await signUpDonor({
+      email,
+      password,
+      fullName,
+      phone,
+      bloodGroup,
+      locality: targetLocality,
+      pincode,
+      isAvailable: availableForEmergency,
+    });
+
+    setIsSubmitting(false);
+
+    if (result.success) {
       setIsSuccess(true);
       if (onSubmitSuccess) {
         onSubmitSuccess({
@@ -75,7 +96,9 @@ export const DonorRegisterModal: React.FC<DonorRegisterModalProps> = ({
           availableForEmergency,
         });
       }
-    }, 800);
+    } else {
+      setErrorMsg(result.error || 'Failed to complete registration.');
+    }
   };
 
   const handleResetAndClose = () => {
@@ -124,7 +147,7 @@ export const DonorRegisterModal: React.FC<DonorRegisterModalProps> = ({
             onClick={handleResetAndClose}
             className="w-full sm:w-auto px-8"
           >
-            Go to Dashboard
+            Access My Dashboard
           </Button>
         </div>
       ) : (
@@ -187,12 +210,12 @@ export const DonorRegisterModal: React.FC<DonorRegisterModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
-              label="Mobile Number (for OTP Alerts) *"
+              label="Mobile Number (for Alerts) *"
               placeholder="e.g. 9845012345"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               leftIcon={<Phone className="w-4 h-4" />}
-              helperText="Strictly private under Indian DPDP Act."
+              helperText="Protected by DPDP. Never made public."
             />
             <Input
               label="Email Address *"
@@ -203,6 +226,16 @@ export const DonorRegisterModal: React.FC<DonorRegisterModalProps> = ({
               leftIcon={<Mail className="w-4 h-4" />}
             />
           </div>
+
+          <Input
+            label="Create Secure Password *"
+            type="password"
+            placeholder="At least 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            leftIcon={<Lock className="w-4 h-4" />}
+            required
+          />
 
           {/* Medical Pre-check Checklist */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs text-charcoal-700">
