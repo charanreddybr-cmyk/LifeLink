@@ -9,11 +9,19 @@ import {
   Phone,
   ShieldCheck,
   XCircle,
-  ArrowRight
+  ArrowRight,
+  Map as MapIcon,
+  Send,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
+import { Modal } from '../../components/common/Modal';
+import { ProximityMap } from '../../components/map/ProximityMap';
+import { runMatchingEngine } from '../../utils/matchingEngine';
+import { BENGALURU_MOCK_DONORS } from '../../data/mockDonors';
+import { BENGALURU_EMERGENCY_HOSPITALS, BENGALURU_LOCALITIES } from '../../data/bengaluruLocalities';
+import type { Coordinates } from '../../utils/geoUtils';
 import type { 
   BloodGroup, 
   DetailedBloodRequest 
@@ -30,6 +38,28 @@ export const RequesterDashboardPage: React.FC<RequesterDashboardPageProps> = () 
   const [activeTab, setActiveTab] = useState<'requests' | 'create' | 'fulfilled'>('requests');
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>('REQ-BLR-8421');
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+
+  // Proximity Map Modal State
+  const [mapModalRequest, setMapModalRequest] = useState<DetailedBloodRequest | null>(null);
+  const [modalRadiusKm, setModalRadiusKm] = useState<number>(15);
+  const [modalExactOnly, setModalExactOnly] = useState<boolean>(false);
+  const [modalAlertSuccess, setModalAlertSuccess] = useState<string | null>(null);
+
+  const getRequisitionCoordinates = (req: DetailedBloodRequest): Coordinates => {
+    const hosp = BENGALURU_EMERGENCY_HOSPITALS.find(
+      (h) =>
+        h.name.toLowerCase().includes(req.hospitalName.toLowerCase()) ||
+        req.hospitalName.toLowerCase().includes(h.name.toLowerCase())
+    );
+    if (hosp) return hosp.coordinates;
+    const loc = BENGALURU_LOCALITIES.find(
+      (l) =>
+        l.name.toLowerCase().includes(req.locality.toLowerCase()) ||
+        req.locality.toLowerCase().includes(l.name.toLowerCase())
+    );
+    if (loc) return loc.coordinates;
+    return { lat: 12.9629, lng: 77.5746 };
+  };
 
   // List of requests
   const [requestsList, setRequestsList] = useState<DetailedBloodRequest[]>([
@@ -395,15 +425,30 @@ export const RequesterDashboardPage: React.FC<RequesterDashboardPageProps> = () 
 
                   {/* Actions Bar */}
                   <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleCancelRequest(selectedRequest.id)}
-                      className="text-red-600 hover:bg-red-50 text-xs w-full sm:w-auto"
-                      leftIcon={<XCircle className="w-4 h-4" />}
-                    >
-                      Cancel Requisition
-                    </Button>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCancelRequest(selectedRequest.id)}
+                        className="text-red-600 hover:bg-red-50 text-xs flex-1 sm:flex-none"
+                        leftIcon={<XCircle className="w-4 h-4" />}
+                      >
+                        Cancel Requisition
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setModalAlertSuccess(null);
+                          setMapModalRequest(selectedRequest);
+                        }}
+                        className="text-xs font-bold text-brand-700 border-brand-200 hover:bg-brand-50 flex-1 sm:flex-none"
+                        leftIcon={<MapIcon className="w-4 h-4 text-brand-600" />}
+                      >
+                        Live Proximity Map
+                      </Button>
+                    </div>
 
                     <Button
                       variant="primary"
@@ -468,6 +513,126 @@ export const RequesterDashboardPage: React.FC<RequesterDashboardPageProps> = () 
             )}
           </div>
         )}
+
+        {/* Proximity Map & Matching Donors Modal */}
+        {mapModalRequest && (() => {
+          const coords = getRequisitionCoordinates(mapModalRequest);
+          const summary = runMatchingEngine(BENGALURU_MOCK_DONORS, {
+            bloodGroup: mapModalRequest.bloodGroup,
+            component: mapModalRequest.component,
+            targetCoordinates: coords,
+            searchRadiusKm: modalRadiusKm,
+            exactMatchOnly: modalExactOnly,
+            hospitalName: mapModalRequest.hospitalName,
+          });
+
+          return (
+            <Modal
+              isOpen={!!mapModalRequest}
+              onClose={() => {
+                setMapModalRequest(null);
+                setModalAlertSuccess(null);
+              }}
+              title={`Live Proximity Map — ${mapModalRequest.patientName}`}
+              description={`Hospital: ${mapModalRequest.hospitalName} • Requested: ${mapModalRequest.unitsNeeded} Units ${mapModalRequest.bloodGroup} (${mapModalRequest.component})`}
+              maxWidth="2xl"
+            >
+              <div className="space-y-4">
+                {/* Controls Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-charcoal-700">Search Radius:</span>
+                    <div className="flex items-center gap-1">
+                      {[5, 10, 15, 25].map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setModalRadiusKm(r)}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-colors ${
+                            modalRadiusKm === r
+                              ? 'bg-brand-700 text-white'
+                              : 'bg-white border border-slate-200 text-charcoal-700 hover:border-slate-300'
+                          }`}
+                        >
+                          {r} km
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-1.5 cursor-pointer font-semibold text-charcoal-700">
+                      <input
+                        type="checkbox"
+                        checked={modalExactOnly}
+                        onChange={(e) => setModalExactOnly(e.target.checked)}
+                        className="rounded text-brand-600 focus:ring-brand-500 w-3.5 h-3.5"
+                      />
+                      <span>Exact Match Only</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Quick Metrics Bar */}
+                <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
+                    <span className="font-bold text-emerald-800 block text-lg font-black">{summary.eligibleCount}</span>
+                    <span className="text-emerald-700 text-[11px]">Eligible in Radius</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200">
+                    <span className="font-bold text-blue-800 block text-lg font-black">{summary.exactMatchesCount}</span>
+                    <span className="text-blue-700 text-[11px]">Exact Blood Match</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="font-bold text-slate-800 block text-lg font-black">{summary.ineligibleBreakdown.cooldownActive}</span>
+                    <span className="text-slate-600 text-[11px]">In Cooldown (Rest)</span>
+                  </div>
+                </div>
+
+                {modalAlertSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-600 text-white text-xs font-bold flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-200" />
+                    <span>{modalAlertSuccess}</span>
+                  </div>
+                )}
+
+                {/* Embedded Leaflet Proximity Map */}
+                <ProximityMap
+                  targetCoords={coords}
+                  targetName={mapModalRequest.hospitalName}
+                  searchRadiusKm={modalRadiusKm}
+                  targetBloodGroup={mapModalRequest.bloodGroup}
+                  targetComponent={mapModalRequest.component}
+                  evaluatedMatches={summary.matches}
+                  height="360px"
+                  onRequestAlert={() => {
+                    setModalAlertSuccess('Dispatched emergency alert ping to donor!');
+                  }}
+                />
+
+                {/* Broadcast Trigger */}
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <span className="text-[11px] text-charcoal-500">
+                    DPDP Act: Donor home GPS coordinates are obscured by ~1.1 km coarse blur.
+                  </span>
+                  <Button
+                    variant="emergency"
+                    size="sm"
+                    disabled={summary.eligibleCount === 0}
+                    onClick={() => {
+                      setModalAlertSuccess(
+                        `Successfully broadcast emergency requisition to ${summary.eligibleCount} eligible donor(s) within ${modalRadiusKm} km!`
+                      );
+                    }}
+                    leftIcon={<Send className="w-3.5 h-3.5" />}
+                  >
+                    Broadcast Ping to All ({summary.eligibleCount})
+                  </Button>
+                </div>
+              </div>
+            </Modal>
+          );
+        })()}
 
       </div>
     </div>
