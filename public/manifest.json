@@ -1,0 +1,35 @@
+{
+  "name": "LifeLink — Emergency Blood Registry",
+  "short_name": "LifeLink",
+  "description": "Real-time emergency blood donor registry and matching network across Bengaluru.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F172A",
+  "theme_color": "#B91C1C",
+  "categories": ["medical", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Post Emergency Request",
+      "short_name": "Emergency",
+      "description": "Submit a critical blood requisition",
+      "url": "/?action=emergency",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Find Donors",
+      "short_name": "Donors",
+      "description": "Search verified donors near you",
+      "url": "/?page=find-donors",
+      "icons": [{ "src": "/favicon.svg", "sizes": "192x192" }]
+    }
+  ]
+}

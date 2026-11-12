@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { RealtimeProvider } from './context/RealtimeContext';
 import { RealtimeToastContainer } from './components/common/RealtimeToastContainer';
+import { OfflineEmergencyBanner } from './components/common/OfflineEmergencyBanner';
 import { EmergencyAlertBanner } from './components/layout/EmergencyAlertBanner';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -58,6 +59,9 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-charcoal-900 font-sans selection:bg-brand-100 selection:text-brand-900">
       
+      {/* Offline Standby & PWA Caching Banner */}
+      <OfflineEmergencyBanner />
+
       {/* 1. 24/7 Top Emergency Bar */}
       <EmergencyAlertBanner
         onRequestClick={() => handleOpenEmergencyModal()}
