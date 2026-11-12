@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useRealtime } from '../../context/RealtimeContext';
 import { 
   PlusCircle, 
   Hospital, 
@@ -12,6 +13,7 @@ import {
   ArrowRight,
   Map as MapIcon,
   Send,
+  Radio,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -34,6 +36,7 @@ interface RequesterDashboardPageProps {
 
 export const RequesterDashboardPage: React.FC<RequesterDashboardPageProps> = () => {
   const { profile, requesterProfile } = useAuth();
+  const { broadcastNewRequest, latestResponseEvent, simulateDonorAcceptance } = useRealtime();
 
   const [activeTab, setActiveTab] = useState<'requests' | 'create' | 'fulfilled'>('requests');
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>('REQ-BLR-8421');
@@ -117,7 +120,7 @@ export const RequesterDashboardPage: React.FC<RequesterDashboardPageProps> = () 
   ]);
 
   // Simulated donor responses mapped to requests
-  const [donorResponses] = useState<Record<string, Array<{
+  const [donorResponses, setDonorResponses] = useState<Record<string, Array<{
     donorId: string;
     donorName: string;
     bloodGroup: BloodGroup;
@@ -175,8 +178,52 @@ export const RequesterDashboardPage: React.FC<RequesterDashboardPageProps> = () 
     setRequestsList(prev => [newReq, ...prev]);
     setSelectedRequestId(newReq.id);
     setActiveTab('requests');
-    showNotice(`Emergency request ${newReq.id} broadcast successfully across ${newReq.locality} radius!`);
+    broadcastNewRequest(newReq);
+    showNotice(`Emergency request ${newReq.id} broadcast successfully in Realtime across ${newReq.locality} radius!`);
   };
+
+  // Realtime subscription event listener for incoming donor acceptances
+  useEffect(() => {
+    if (!latestResponseEvent) return;
+    const { requestId, donorName, bloodGroup, phone, locality, distanceKm } = latestResponseEvent;
+
+    setDonorResponses(prev => {
+      const existing = prev[requestId] || [];
+      if (existing.some(d => d.phone === phone)) return prev;
+
+      const newDonor = {
+        donorId: `DNR-${Date.now().toString().slice(-4)}`,
+        donorName,
+        bloodGroup,
+        locality,
+        distanceKm,
+        phone,
+        status: 'ACCEPTED' as const,
+        respondedAgo: 'Just now',
+      };
+
+      return {
+        ...prev,
+        [requestId]: [newDonor, ...existing]
+      };
+    });
+
+    setRequestsList(prev => prev.map(req => {
+      if (req.id === requestId) {
+        const newFulfilled = Math.min(req.unitsNeeded, req.unitsFulfilled + 1);
+        const isFullyFulfilled = newFulfilled >= req.unitsNeeded;
+        return {
+          ...req,
+          responsesCount: req.responsesCount + 1,
+          unitsFulfilled: newFulfilled,
+          status: isFullyFulfilled ? 'FULFILLED' : 'RESPONSES_RECEIVED',
+        };
+      }
+      return req;
+    }));
+
+    showNotice(`Realtime Event: Donor ${donorName} (${bloodGroup}) accepted requisition ${requestId}! Authorized phone contact released.`);
+  }, [latestResponseEvent]);
 
   const showNotice = (msg: string) => {
     setStatusNotice(msg);
@@ -372,12 +419,20 @@ export const RequesterDashboardPage: React.FC<RequesterDashboardPageProps> = () 
 
                   {/* Responding Donors Section */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <h4 className="text-sm font-bold uppercase tracking-wider text-charcoal-800 flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-brand-700" />
                         <span>Responding Donors Who Accepted ({donorResponses[selectedRequest.id]?.length || 0})</span>
                       </h4>
-                      <span className="text-xs text-charcoal-500">Contact details authorized by donor</span>
+                      <button
+                        type="button"
+                        onClick={() => simulateDonorAcceptance(selectedRequest.id)}
+                        className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5 self-start sm:self-auto transition-colors"
+                        title="Simulate a nearby donor accepting this requisition via Supabase Realtime"
+                      >
+                        <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                        <span>Simulate Live Donor Response</span>
+                      </button>
                     </div>
 
                     {donorResponses[selectedRequest.id]?.length ? (

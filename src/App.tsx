@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { RealtimeProvider } from './context/RealtimeContext';
+import { RealtimeToastContainer } from './components/common/RealtimeToastContainer';
 import { EmergencyAlertBanner } from './components/layout/EmergencyAlertBanner';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -156,6 +158,9 @@ const AppContent: React.FC = () => {
         onLoginSuccess={handleLoginSuccess}
       />
 
+      {/* 6. Realtime Alerts Floating Dock */}
+      <RealtimeToastContainer onOpenRequest={() => handleNavigate('dashboard')} />
+
     </div>
   );
 };
@@ -163,7 +168,9 @@ const AppContent: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <RealtimeProvider>
+        <AppContent />
+      </RealtimeProvider>
     </AuthProvider>
   );
 };

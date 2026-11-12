@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Menu, X, Droplet, Heart, AlertCircle, PlusCircle, LogOut, UserCheck } from 'lucide-react';
 import { Button } from '../common/Button';
 import { useAuth } from '../../context/AuthContext';
+import { RealtimeStatusIndicator } from '../common/RealtimeStatusIndicator';
+import { NotificationsDrawer } from '../common/NotificationsDrawer';
 
 interface NavbarProps {
   currentPage: string;
@@ -90,8 +92,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Action CTAs */}
-          <div className="hidden sm:flex items-center gap-2.5">
+          {/* Action CTAs & Realtime Indicators */}
+          <div className="hidden sm:flex items-center gap-2">
+            <RealtimeStatusIndicator />
+            <NotificationsDrawer />
+
+            <div className="h-6 w-[1px] bg-slate-200 mx-0.5" />
+
             <Button
               variant="emergency"
               size="sm"
@@ -143,21 +150,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex sm:hidden items-center gap-2">
+          <div className="flex sm:hidden items-center gap-1.5">
+            <RealtimeStatusIndicator />
+            <NotificationsDrawer />
             <Button
               variant="emergency"
               size="sm"
               onClick={onRequestEmergency}
-              className="px-2.5 py-1 text-xs"
+              className="px-2 py-1 text-xs"
             >
               Request
             </Button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-charcoal-700 hover:text-charcoal-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="p-1.5 rounded-xl text-charcoal-700 hover:text-charcoal-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
               aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
 

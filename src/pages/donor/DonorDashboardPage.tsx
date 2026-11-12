@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useRealtime } from '../../context/RealtimeContext';
+import { isBloodCompatible } from '../../utils/matchingEngine';
 import { 
   MapPin, 
   Clock, 
@@ -16,7 +18,8 @@ import {
   Phone,
   Trash2,
   CalendarCheck,
-  Award
+  Award,
+  Radio,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
@@ -30,6 +33,7 @@ import { PhoneVerificationModal } from '../../components/donor/PhoneVerification
 
 export const DonorDashboardPage: React.FC = () => {
   const { profile, donorProfile, updateDonorAvailability } = useAuth();
+  const { latestRequestEvent, broadcastDonorResponse, simulateIncomingEmergency } = useRealtime();
   
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'settings' | 'requests' | 'history'>('overview');
@@ -165,11 +169,49 @@ export const DonorDashboardPage: React.FC = () => {
   const handleRespond = (reqId: string, type: 'ACCEPTED' | 'DECLINED') => {
     setIncomingRequests(prev => prev.map(r => r.id === reqId ? { ...r, responded: true, responseType: type } : r));
     if (type === 'ACCEPTED') {
-      showNotice('Your willingness has been relayed to the hospital attendant. Your phone number is now authorized for contact release.');
+      broadcastDonorResponse(
+        reqId,
+        fullName || profile?.full_name || 'Community Donor',
+        bloodGroup,
+        phone || profile?.phone || '9845012345',
+        locality,
+        2.1
+      );
+      showNotice('Your willingness has been relayed in Realtime to the hospital attendant. Phone contact authorized.');
     } else {
       showNotice('Response noted. The request remains available for other local donors.');
     }
   };
+
+  // Listen for realtime incoming emergency requests matching donor's blood group
+  useEffect(() => {
+    if (!latestRequestEvent) return;
+
+    // Evaluate clinical compatibility with this donor's blood group
+    const isCompat = isBloodCompatible(bloodGroup, latestRequestEvent.bloodGroup, latestRequestEvent.component);
+    if (!isCompat) return;
+
+    setIncomingRequests(prev => {
+      if (prev.some(r => r.id === latestRequestEvent.id)) return prev;
+
+      const newEntry = {
+        id: latestRequestEvent.id,
+        patientName: latestRequestEvent.patientName,
+        hospital: latestRequestEvent.hospitalName,
+        locality: latestRequestEvent.locality,
+        units: latestRequestEvent.unitsNeeded,
+        bloodGroup: latestRequestEvent.bloodGroup,
+        priority: latestRequestEvent.priority,
+        requiredBy: latestRequestEvent.requiredBy,
+        distanceKm: 2.1,
+        responded: false,
+      };
+
+      return [newEntry, ...prev];
+    });
+
+    showNotice(`Live Realtime Broadcast: ${latestRequestEvent.bloodGroup} urgently requested at ${latestRequestEvent.hospitalName}!`);
+  }, [latestRequestEvent, bloodGroup]);
 
   const showNotice = (msg: string) => {
     setStatusNotice(msg);
@@ -335,12 +377,23 @@ export const DonorDashboardPage: React.FC = () => {
                     Live Emergency Broadcasts in Your Radius
                   </h3>
                 </div>
-                <button
-                  onClick={() => setActiveTab('requests')}
-                  className="text-xs font-bold text-brand-700 hover:underline"
-                >
-                  View All ({incomingRequests.length})
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={simulateIncomingEmergency}
+                    className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-xl border border-brand-200 transition-colors"
+                    title="Simulate an emergency requisition dispatch in real time"
+                  >
+                    <Radio className="w-3.5 h-3.5 text-brand-600 animate-pulse" />
+                    <span>Simulate Realtime Ping</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('requests')}
+                    className="text-xs font-bold text-brand-700 hover:underline"
+                  >
+                    View All ({incomingRequests.length})
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
