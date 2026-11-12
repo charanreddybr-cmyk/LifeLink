@@ -1,6 +1,12 @@
 # LifeLink (Bengaluru Edition)
 ### *Every Drop Counts. Be Someone's Lifeline.*
 
+[![Deploy to GitHub Pages](https://github.com/charanreddybr-cmyk/LifeLink/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/charanreddybr-cmyk/LifeLink/actions/workflows/deploy-pages.yml)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcharanreddybr-cmyk%2FLifeLink)
+
+🌐 **Live Application:** [https://charanreddybr-cmyk.github.io/LifeLink/](https://charanreddybr-cmyk.github.io/LifeLink/)  
+📂 **GitHub Repository:** [https://github.com/charanreddybr-cmyk/LifeLink](https://github.com/charanreddybr-cmyk/LifeLink)
+
 LifeLink is a production-oriented, full-stack, real-time blood donor registry and emergency requisition platform engineered to connect hospital patients requiring transfusions with nearby, willing, and contactable donors within minutes.
 
 - **Initial Launch Service Area:** Bengaluru, Karnataka, India (18+ BBMP Localities & Major Blood Centres)
